@@ -1,8 +1,8 @@
 object Form1: TForm1
   Left = 1164
   Top = 574
-  Width = 242
-  Height = 236
+  Width = 245
+  Height = 278
   Caption = #1040#1088#1093#1080#1074#1072#1090#1086#1088
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -15,13 +15,13 @@ object Form1: TForm1
   PixelsPerInch = 96
   TextHeight = 13
   object FilenameLabel: TLabel
-    Left = 40
-    Top = 8
-    Width = 3
-    Height = 13
+    Left = 19
+    Top = 56
+    Width = 14
+    Height = 17
   end
   object Label1: TLabel
-    Left = 8
+    Left = 16
     Top = 8
     Width = 174
     Height = 13
@@ -36,7 +36,7 @@ object Form1: TForm1
   end
   object OpenButton: TButton
     Left = 56
-    Top = 64
+    Top = 80
     Width = 145
     Height = 25
     Caption = #1054#1090#1082#1088#1099#1090#1100' '#1092#1072#1081#1083
@@ -45,7 +45,7 @@ object Form1: TForm1
   end
   object CompressionButton: TButton
     Left = 56
-    Top = 96
+    Top = 112
     Width = 145
     Height = 25
     Caption = #1057#1078#1072#1090#1100' '#1080' '#1089#1086#1093#1088#1072#1085#1080#1090#1100
@@ -55,7 +55,7 @@ object Form1: TForm1
   end
   object RecoveryButton: TButton
     Left = 56
-    Top = 128
+    Top = 144
     Width = 145
     Height = 25
     Caption = #1042#1086#1089#1089#1090#1072#1085#1086#1074#1080#1090#1100' '#1080' '#1089#1086#1093#1088#1072#1085#1080#1090#1100
@@ -65,7 +65,7 @@ object Form1: TForm1
   end
   object ProgressBar1: TProgressBar
     Left = 56
-    Top = 160
+    Top = 176
     Width = 145
     Height = 25
     TabOrder = 3
@@ -92,10 +92,10 @@ object Form1: TForm1
   end
   object OpenDialog1: TOpenDialog
     Left = 16
-    Top = 80
+    Top = 96
   end
   object SaveDialog1: TSaveDialog
     Left = 8
-    Top = 128
+    Top = 144
   end
 end

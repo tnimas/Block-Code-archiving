@@ -37,8 +37,6 @@ private
 Data:TData;
 Handlers:TInterfaceList;
   procedure OnStep(delta:byte);
-
-
   procedure LoadDataFromFile(const FileName: TFileName);
   procedure SaveDataToFile(const FileName: TFileName);
   procedure SaveCompressedDataToFile(const FileName: TFileName);
@@ -48,8 +46,6 @@ Handlers:TInterfaceList;
   procedure FillCompressingBytes();
   procedure FillDecompressingBytes();
   procedure ClearData();
-
-
 end;
 
 
@@ -180,7 +176,6 @@ begin
   Data.Head.Add(nextByteCode);
 end;
 
-
 end;
 
 procedure Tarchiver.CalculateRangs();
@@ -219,7 +214,7 @@ end;
 (*
 заполнить CompressingValues в соответствии с рангами листа TByteCodes
 
-соответствия rang - result
+соответствия rang - result для шага 2 и начальной длины 2
  0 - 10
  1 - 11
  2 - 0100
@@ -279,22 +274,16 @@ for i:=0 to 255 do
    x:=0;
    end;
 
-
    if (nowZeroCount > 0) then
     for j:=0 to nowZeroCount-1 do
       value:= value + '0';
    value:= value + '1';
    binNumber:=ByteToStr(x);
 
-
-
    if (nowZeroCount = 0) then
     rightDelta := 0 else
     rightDelta := Data.BlockCodeStep-1;
 
- // v1:= length(binNumber)-nowZeroCount*rightDelta-BlockCodeStart+2;
- // v2:= nowZeroCount * rightDelta+BlockCodeStart-1;
-  ///ShowMessage(IntToStr(v1+v2));
    value:= value +
     copy(binNumber,length(binNumber)-nowZeroCount*rightDelta-Data.BlockCodeStart+2,nowZeroCount * rightDelta+Data.BlockCodeStart-1);
 
@@ -496,9 +485,9 @@ Data.Head.Sort(compareByRang);
     FileStream.Free;
   end;
 end;
-
-
 //end load logic
+
+
 procedure TArchiver.AddProgressHandler(handler:IProgressHandler);
 begin
 handlers.Add(handler);

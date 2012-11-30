@@ -28,7 +28,6 @@ type
   public
   procedure StepHandleEvent(delta:byte);
   end;
- const filebuf:integer = 1024;
 var
   Form1: TForm1;
   archiver:Tarchiver;
