@@ -1,7 +1,7 @@
 unit Archiver;
 
 interface
-uses Dialogs,Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls;
+uses Dialogs, Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls,Math;
 type
 
   IProgressHandler = interface
@@ -49,7 +49,8 @@ Handlers:TInterfaceList;
 
 
 end;
-
+const BlockCodeStep:integer = 2;
+      BlockCodeStart:integer = 3;
 
 implementation
 
@@ -226,6 +227,10 @@ end;
  ...
  255 - ...
 
+ 0-10
+ 1-11
+ 2-01000
+
 
  размер подвижной части по рангам:
  0-1 - 1 (2)
@@ -235,8 +240,8 @@ end;
  количество фиксированных нулей + 1
  *)
 procedure Tarchiver.FillCompressingHeadValues();
-var i,nowZeroCount,previosZeroCount,j,x:byte;  nextByteRecord:TByteCodes; value,binNumber:string;
-
+var i,nowZeroCount,rightDelta,j,x:byte;  nextByteRecord:TByteCodes; value,binNumber:string;
+countR,currentR:integer;
 (*
  количество фиксированных нулей по рангам:
  0-1     - 0 (2)
@@ -248,40 +253,46 @@ var i,nowZeroCount,previosZeroCount,j,x:byte;  nextByteRecord:TByteCodes; value,
  126-253 - 6 (128)
  254-255 - 7 (2)
 *)
-  function GetFixedZeroByRang(rang:byte):byte;
-    begin
-case (rang) of
-0..1:result:=0;
-2..5:result:=1;
-6..13:result:=2;
-14..29:result:=3;
-30..61:result:=4;
-62..125:result:=5;
-126..253:result:=6;
-else result:=7;
-end;
-  end;
+
 
 begin
 Data.Head.Sort(compareByRang);
-previosZeroCount :=0;
 x:=0;
+nowZeroCount:=0;
+countR:=BLockCodeStart-1;
+currentR:=Round(Power(2,countR));
+
 for i:=0 to 255 do
    begin
    nextByteRecord:= TByteCodes(Data.Head.Items[i]);
-   nowZeroCount := GetFixedZeroByRang(i);
-   if (nowZeroCount <> previosZeroCount) then
+
+   if (i >= currentR) then
    begin
-    x:=0;
-    previosZeroCount := nowZeroCount;
+   countR := countR + BlockCodeStep-1;
+   currentR:= Round(Power(2,countR)) + i;
+
+   inc(nowZeroCount);
+   x:=0;
    end;
+
 
    if (nowZeroCount > 0) then
     for j:=0 to nowZeroCount-1 do
       value:= value + '0';
    value:= value + '1';
    binNumber:=ByteToStr(x);
-   value:= value + copy(binNumber,length(binNumber)-nowZeroCount,nowZeroCount+1);
+
+
+
+   if (nowZeroCount = 0) then
+    rightDelta := 0 else
+    rightDelta := BlockCodeStep-1;
+
+ // v1:= length(binNumber)-nowZeroCount*rightDelta-BlockCodeStart+2;
+ // v2:= nowZeroCount * rightDelta+BlockCodeStart-1;
+  ///ShowMessage(IntToStr(v1+v2));
+   value:= value +
+    copy(binNumber,length(binNumber)-nowZeroCount*rightDelta-BlockCodeStart+2,nowZeroCount * rightDelta+BlockCodeStart-1);
 
    nextByteRecord.CompressedValue := value;
    value:='';
@@ -296,7 +307,7 @@ var i,j: integer; nextReadByte,nextWriteByte:byte;procentCounter:integer;
 nextByteRecord:TByteCodes;  nowValues,rest:string;
 begin
 Data.Head.Sort(compareByCode);
-SetLength(Data.CompressedArray,Data.DataLength*2);
+SetLength(Data.CompressedArray,Data.DataLength*8);
 nowValues:='';
 rest:='';
 j:=0;
@@ -314,7 +325,7 @@ end;
 nextReadByte:=Data.DataArray[i];
 nextByteRecord:= TByteCodes(Data.Head.Items[nextReadByte]);
 nowValues:=nowValues+nextByteRecord.CompressedValue;
-if (length(nowValues) >= 8) then
+while (length(nowValues) >= 8) do
   begin
   nextWriteByte:=StrToByte(copy(nowValues,1,8));
   Delete(nowValues,1,8);
@@ -343,7 +354,7 @@ function DecompressValue(var buffer:string; var dataCounter:integer):boolean;
 var j,k:integer; nextValue:TByteCodes; bufferpart:string;
 begin
 result:=false;
-      for j:=2 to length(buffer) do
+      for j:=1 to length(buffer) do
       begin  //перебрать все варианты кодового слова
        bufferpart:= copy(buffer,1,j);
 
@@ -364,9 +375,10 @@ end;
 
 var i,dataCounter,arraylength,procentCounter:integer; buffer:string;
 begin
+buffer:='';
 Data.Head.Sort(compareByRang);
 arraylength:=length(Data.CompressedArray);
-SetLength(Data.DataArray,arraylength*4);
+SetLength(Data.DataArray,arraylength*8);
 dataCounter:=0;
 procentCounter :=0;
 for i:=0 to arraylength-1 do
@@ -380,7 +392,7 @@ OnStep(1);
 end;
 
    buffer := buffer + ByteToStr(Data.CompressedArray[i]);
-   if (length(buffer) >= 16) then //16 максимальная длина кодового слова
+   if (length(buffer) >= 24) then //16 максимальная длина кодового слова
    begin
      DecompressValue(buffer,dataCounter);
    end;//if buflength >=16
@@ -388,6 +400,7 @@ end;//i цикл
 while (length(buffer) > 0) do
  if (not DecompressValue(buffer,dataCounter)) then
   break;//в последнем байте могут быть добавленные нули в конце
+
 SetLength(Data.DataArray,dataCounter);
 OnStep(100);
 end;
