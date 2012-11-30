@@ -19,6 +19,8 @@ type
 
   TData = class(TComponent)
   public
+  BlockCodeStep:byte;
+  BlockCodeStart:byte;
   Head: TList;
   DataArray : TbyteArray;
   CompressedArray:TbyteArray;
@@ -28,7 +30,7 @@ type
 TArchiver = class
 public
 procedure AddProgressHandler(handler:IProgressHandler);
-procedure CompressFile(const inputFilename:string; const outputFilename: string);
+procedure CompressFile(const inputFilename:string;const outputFilename:string;codeStep:byte=2;codeStart:byte=2 );
 procedure DecompressFile(const inputFilename:string; const outputFilename: string );
 constructor Create();overload;
 private
@@ -49,8 +51,7 @@ Handlers:TInterfaceList;
 
 
 end;
-const BlockCodeStep:integer = 2;
-      BlockCodeStart:integer = 3;
+
 
 implementation
 
@@ -119,9 +120,11 @@ begin
 handlers := TInterfaceList.Create;
 end;
 
-procedure Tarchiver.CompressFile(const inputFilename:string;const outputFilename:string );
+procedure Tarchiver.CompressFile(const inputFilename:string;const outputFilename:string;codeStep:byte=2;codeStart:byte=2 );
 begin
 ClearData();
+Data.BlockCodeStep := codeStep;
+Data.BlockCodeStart:= codeStart;
 //загрузить несжатые байты в основной массив
 LoadDataFromFile(inputFilename);
 //вычислить какие байты встречаются чаще, проранжировать
@@ -167,7 +170,8 @@ end;
 
 Data:= TData.Create(nil);
 Data.Head:= TList.Create;
-
+Data.BlockCodeStep:=0;
+Data.BlockCodeStart:=0;
 for i:=0 to 255 do
 begin
   nextByteCode := TByteCodes.Create;
@@ -259,7 +263,7 @@ begin
 Data.Head.Sort(compareByRang);
 x:=0;
 nowZeroCount:=0;
-countR:=BLockCodeStart-1;
+countR:=Data.BLockCodeStart-1;
 currentR:=Round(Power(2,countR));
 
 for i:=0 to 255 do
@@ -268,7 +272,7 @@ for i:=0 to 255 do
 
    if (i >= currentR) then
    begin
-   countR := countR + BlockCodeStep-1;
+   countR := countR + Data.BlockCodeStep-1;
    currentR:= Round(Power(2,countR)) + i;
 
    inc(nowZeroCount);
@@ -286,13 +290,13 @@ for i:=0 to 255 do
 
    if (nowZeroCount = 0) then
     rightDelta := 0 else
-    rightDelta := BlockCodeStep-1;
+    rightDelta := Data.BlockCodeStep-1;
 
  // v1:= length(binNumber)-nowZeroCount*rightDelta-BlockCodeStart+2;
  // v2:= nowZeroCount * rightDelta+BlockCodeStart-1;
   ///ShowMessage(IntToStr(v1+v2));
    value:= value +
-    copy(binNumber,length(binNumber)-nowZeroCount*rightDelta-BlockCodeStart+2,nowZeroCount * rightDelta+BlockCodeStart-1);
+    copy(binNumber,length(binNumber)-nowZeroCount*rightDelta-Data.BlockCodeStart+2,nowZeroCount * rightDelta+Data.BlockCodeStart-1);
 
    nextByteRecord.CompressedValue := value;
    value:='';
@@ -445,9 +449,14 @@ procedure TArchiver.LoadCompressedDataFromFile(const FileName: TFileName);
 var
   FileStream: TFileStream; i:integer; nextItem:TByteCodes; buf: array of byte;
 begin
-SetLength(buf,1);
+SetLength(buf,2);
   FileStream := TFileStream.Create(FileName, fmOpenRead);
   try
+  //read type
+    FileStream.Read(Pointer(buf)^,2);
+    Data.BlockCodeStart := buf[0];
+    Data.BlockCodeStep  :=buf[1];
+
   // read head
   for i:=0 to 255 do
   begin
@@ -471,6 +480,9 @@ begin
 Data.Head.Sort(compareByRang);
   FileStream := TFileStream.Create(FileName, fmCreate);
   try
+  //write type
+  FileStream.Write(Data.BlockCodeStart,1);
+  FileStream.Write(Data.BlockCodeStep,1);
   // write head
   for i:=0 to 255 do
   begin

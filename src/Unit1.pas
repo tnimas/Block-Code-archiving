@@ -15,6 +15,10 @@ type
     FilenameLabel: TLabel;
     OpenDialog1: TOpenDialog;
     SaveDialog1: TSaveDialog;
+    Label1: TLabel;
+    Label2: TLabel;
+    StartBox: TEdit;
+    StepBox: TEdit;
     procedure OpenButtonClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure CompressionButtonClick(Sender: TObject);
@@ -56,7 +60,14 @@ end;
 
 
 procedure TForm1.CompressionButtonClick(Sender: TObject);
+var start,step:byte;
 begin
+try
+start:=StrToInt(StartBox.Text);
+step:=StrToInt(StepBox.Text);
+if ( (start+step > 8) or (step < 2)) then
+Raise Exception.Create('«адайте корректные значени€ начальной длины кодового слова и смещени€!');
+
 SaveDialog1.Filter := 'Block code file|*.bc';
 SaveDialog1.FileName:= FilenameLabel.Caption+'.bc';
 if (SaveDialog1.Execute) then
@@ -64,6 +75,11 @@ begin
 archiver.CompressFile(FilenameLabel.Caption,SaveDialog1.FileName);
 RecalculateFormState(SaveDialog1.FileName);
 end;
+
+except On E : Exception do
+Showmessage(E.Message);
+end;
+
 end;
 
 
